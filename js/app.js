@@ -8,16 +8,41 @@
   const clone = o => JSON.parse(JSON.stringify(o));
 
   function load() {
+    let raw = null;
     try {
-      const raw = localStorage.getItem(C.storageKey);
+      raw = localStorage.getItem(C.storageKey);
       if (raw) return N.validateBackup(JSON.parse(raw));
-    } catch (e) { /* 壞掉就用示範資料 */ }
+    } catch (e) {
+      // 壞掉就用示範資料，但先把壞資料另存一份，避免下次儲存時被蓋掉而無法救回
+      try { if (raw) localStorage.setItem(C.storageKey + '-corrupt', raw); } catch (e2) { /* 空間不足就算了 */ }
+    }
     return clone(window.NEEDS_SAMPLE);
   }
+  // 回傳 true＝真的存進去了；false＝失敗（私密視窗、空間滿了）。呼叫端必須檢查，不能假裝成功。
   function save(d) {
-    try { localStorage.setItem(C.storageKey, JSON.stringify(d)); } catch (e) { alert('瀏覽器不允許儲存（可能是私密視窗）。'); }
+    try { localStorage.setItem(C.storageKey, JSON.stringify(d)); return true; }
+    catch (e) {
+      alert('儲存失敗：瀏覽器不允許寫入（私密視窗或儲存空間已滿）。這次的變更「沒有」存下來，請先按「下載備份」。');
+      return false;
+    }
   }
   let data = load();
+  // 每次變更前先重新讀取最新資料（另一個分頁可能剛收到新需求），避免用舊資料整份覆蓋而弄丟別人剛送的需求。
+  // fn 收到最新資料並回傳新資料；儲存失敗就維持原狀並回傳 false。
+  function commit(fn) {
+    const latest = load();
+    let next;
+    try { next = fn(latest); } catch (err) { alert(err.message); return false; }
+    if (!save(next)) return false;
+    data = next;
+    return true;
+  }
+  // 別的分頁改了資料 → 這頁跟著更新
+  window.addEventListener('storage', e => {
+    if (e.key === C.storageKey) { data = load(); renderPublic(); renderAdmin(); }
+  });
+  // 本機（台灣）日期；不用 toISOString，那是 UTC，台灣 00:00～08:00 會變成前一天
+  const localDate = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
   function download(name, text, type) {
     const a = document.createElement('a');
@@ -60,10 +85,13 @@
       const x = Object.fromEntries(new FormData(form));
       const errors = N.validateNeed(x);
       const msg = $('#formMessage');
+      if (!x.consent) errors.push('請勾選同意蒐集與使用資料');
       if (errors.length) { msg.textContent = errors.join('；'); return; }
-      const r = N.addNeed(data, x, C);
-      data = r.data; save(data); form.reset();
-      msg.textContent = `已收到（編號 ${r.need.id}）。平台確認內容後才會公開摘要，聯絡方式不會公開。`;
+      let created = null;
+      const ok = commit(d => { const r = N.addNeed(d, x, C); created = r.need; return r.data; });
+      if (!ok) { msg.textContent = '送出失敗：資料沒有存下來（瀏覽器不允許儲存或空間已滿），請稍後再試。'; return; }
+      form.reset();
+      msg.textContent = `已收到（編號 ${created.id}）。示範版：資料只存在這個瀏覽器，不會送到任何伺服器。平台確認內容後才會公開摘要，聯絡方式不會公開。`;
       renderPublic();
     });
   }
@@ -79,8 +107,10 @@
     const q = ($('#search') && $('#search').value.trim()) || '';
     const fs = ($('#filterStatus') && $('#filterStatus').value) || '';
     const dups = N.findDuplicates(data.needs);
-    const rows = data.needs.filter(n => (!fs || n.status === fs) &&
+    const matched = data.needs.filter(n => (!fs || n.status === fs) &&
       (!q || [n.id, n.title, n.description, n.area, n.category].join(' ').includes(q)));
+    const LIMIT = 300;  // 一次最多畫 300 列，資料很多時用搜尋／狀態篩選縮小
+    const rows = matched.slice(0, LIMIT);
     const provName = id => (data.providers.find(p => p.id === id) || {}).name || '';
     $('#adminNeeds').innerHTML = `<table class="data-table"><thead><tr><th>編號</th><th>標題</th><th>地區</th><th>類別</th>
       <th>聯絡（遮罩）</th><th>狀態</th><th>媒合服務者</th><th>建立</th></tr></thead><tbody>${rows.map(n => {
@@ -93,16 +123,18 @@
         <td><select data-status="${esc(n.id)}">${C.statuses.map(st => `<option${st === n.status ? ' selected' : ''}>${esc(st)}</option>`).join('')}</select></td>
         <td><select data-provider="${esc(n.id)}">${opts.map(p => `<option value="${esc(p.id)}"${p.id === n.providerId ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></td>
         <td>${esc(n.created)}</td></tr>`;
-      }).join('')}</tbody></table>${rows.length ? '' : '<p class="muted">沒有符合的需求。</p>'}`;
+      }).join('')}</tbody></table>${rows.length ? '' : '<p class="muted">沒有符合的需求。</p>'}${matched.length > LIMIT ? `<p class="small-muted">符合 ${matched.length} 筆，只顯示前 ${LIMIT} 筆，請用搜尋或狀態篩選縮小範圍。</p>` : ''}`;
 
     document.querySelectorAll('[data-status]').forEach(sel => sel.addEventListener('change', () => {
-      data = N.updateNeed(data, sel.dataset.status, { status: sel.value }); save(data); renderAdmin();
+      commit(d => N.updateNeed(d, sel.dataset.status, { status: sel.value })); renderAdmin();
     }));
     document.querySelectorAll('[data-provider]').forEach(sel => sel.addEventListener('change', () => {
-      const patch = { providerId: sel.value };
-      const cur = data.needs.find(n => n.id === sel.dataset.provider);
-      if (sel.value && cur && ['待確認', '已確認'].includes(cur.status)) patch.status = '媒合中';
-      data = N.updateNeed(data, sel.dataset.provider, patch); save(data); renderAdmin();
+      commit(d => {
+        const patch = { providerId: sel.value };
+        const cur = d.needs.find(n => n.id === sel.dataset.provider);
+        if (sel.value && cur && ['待確認', '已確認'].includes(cur.status)) patch.status = '媒合中';
+        return N.updateNeed(d, sel.dataset.provider, patch);
+      }); renderAdmin();
     }));
     document.querySelectorAll('.reveal').forEach(b => b.addEventListener('click', () => {
       const n = data.needs.find(x => x.id === b.dataset.id);
@@ -116,34 +148,36 @@
 
   if ($('#metrics')) {
     fillSelect($('#filterStatus'), C.statuses, '全部狀態');
-    $('#search').addEventListener('input', renderAdmin);
+    let searchTimer;
+    $('#search').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(renderAdmin, 150); });
     $('#filterStatus').addEventListener('change', renderAdmin);
     $('#providerBtn').addEventListener('click', () => { $('#providerModal').hidden = false; });
     $('#providerCancel').addEventListener('click', () => { $('#providerModal').hidden = true; });
     $('#providerForm').addEventListener('submit', e => {
       e.preventDefault();
-      try {
-        data = N.addProvider(data, Object.fromEntries(new FormData(e.target))).data;
-        save(data); e.target.reset(); $('#providerModal').hidden = true; renderAdmin();
-      } catch (err) { alert(err.message); }
+      const input = Object.fromEntries(new FormData(e.target));
+      if (commit(d => N.addProvider(d, input).data)) { e.target.reset(); $('#providerModal').hidden = true; renderAdmin(); }
     });
     $('#exportCsv').addEventListener('click', () => {
       const provName = id => (data.providers.find(p => p.id === id) || {}).name || '';
       const rows = data.needs.map(n => Object.assign({}, n, { provider: provName(n.providerId) }));
-      download(`needs_${new Date().toISOString().slice(0, 10)}.csv`, N.toCSV(rows, [
+      download(`needs_${localDate()}.csv`, N.toCSV(rows, [
         { key: 'id', label: '編號' }, { key: 'title', label: '標題' }, { key: 'area', label: '地區' },
         { key: 'category', label: '類別' }, { key: 'description', label: '說明' }, { key: 'deadline', label: '期限' },
         { key: 'status', label: '狀態' }, { key: 'provider', label: '媒合服務者' }, { key: 'created', label: '建立日期' },
         { key: 'contact', label: '聯絡方式' }]), 'text/csv;charset=utf-8');
     });
     $('#exportJson').addEventListener('click', () =>
-      download(`needs_backup_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 1), 'application/json'));
+      download(`needs_backup_${localDate()}.json`, JSON.stringify(data, null, 1), 'application/json'));
     $('#importJson').addEventListener('change', async e => {
       const f = e.target.files[0];
       if (!f) return;
       try {
-        data = N.validateBackup(JSON.parse(await f.text())); save(data); renderAdmin();
-        alert(`已匯入 ${data.needs.length} 筆需求、${data.providers.length} 位服務者。`);
+        const incoming = N.validateBackup(JSON.parse(await f.text()));
+        if (!confirm(`匯入會「取代」目前的全部資料（現有 ${data.needs.length} 筆需求）。
+備份檔內有 ${incoming.needs.length} 筆需求、${incoming.providers.length} 位服務者。
+要繼續嗎？（建議先按「下載備份」）`)) { e.target.value = ''; return; }
+        if (commit(() => incoming)) { renderAdmin(); alert(`已匯入 ${data.needs.length} 筆需求、${data.providers.length} 位服務者。`); }
       } catch (err) { alert('匯入失敗：' + err.message); }
       e.target.value = '';
     });
@@ -154,7 +188,7 @@
         setTimeout(() => { delete $('#seedBtn').dataset.armed; $('#seedBtn').textContent = '重置示範資料'; }, 4000);
         return;
       }
-      data = clone(window.NEEDS_SAMPLE); save(data); renderAdmin();
+      commit(() => clone(window.NEEDS_SAMPLE)); renderAdmin();
       delete $('#seedBtn').dataset.armed; $('#seedBtn').textContent = '重置示範資料';
     });
   }

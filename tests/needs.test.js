@@ -108,3 +108,53 @@ test('去識別化：說明文字裡的電話、Email、身分證、LINE ID 不�
   assert.ok(!pub.description.includes('0933123456'));
   assert.ok(!('contact' in pub));
 });
+
+test('去識別化：全形數字、點／斜線／空白分隔、+886、中文數字、Email 變形都擋得住', () => {
+  const leaks = ['０９１２３４５６７８', '0912.345.678', '0912/345/678', '09 12 34 56 78', '+886912345678', '＋886 912 345 678',
+    '+886-912-345-678', '零九一二三四五六七八', 'abc＠gmail.com', 'abc @ gmail.com', 'abc at gmail dot com', '0912\u200b345678', '0912‑345‑678'];
+  for (const s of leaks) {
+    const t = N.redactText('請聯絡 ' + s + ' 謝謝');
+    assert.ok(/已隱藏/.test(t), `沒蓋掉：${s} → ${t}`);
+    assert.ok(!/345|gmail|三四五/.test(t), `漏字：${s} → ${t}`);
+  }
+  for (const s of ['加賴 mysecret99', 'Ｌｉｎｅ：abc_123', 'IG: foo.bar', '@wang_999', 'https://line.me/ti/p/abc123', '身分證 Ａ１２３４５６７８９', 'a1 23456789']) {
+    const t = N.redactText(s);
+    assert.ok(/已隱藏/.test(t), `沒蓋掉：${s} → ${t}`);
+  }
+  // 不能誤傷一般數字
+  const ok = N.redactText('約 25 份 2026-10-04 共 1000 元 0.75 公斤 預算 100000000');
+  assert.strictEqual(ok, '約 25 份 2026-10-04 共 1000 元 0.75 公斤 預算 100000000');
+});
+
+test('公開頁只輸出白名單欄位（多餘欄位、聯絡方式都不外流）', () => {
+  const d = fresh();
+  d.needs[1].email = 'secret@x.com'; d.needs[1].note = '內部備註';
+  const pub = N.publicView(d, C).find(n => n.id === d.needs[1].id);
+  assert.deepStrictEqual(Object.keys(pub).sort(), ['area', 'category', 'created', 'deadline', 'description', 'id', 'status', 'title']);
+});
+
+test('CSV：開頭是 Tab／換行／空白再接 = 的也要擋', () => {
+  const cols = [{ key: 'a', label: 'A' }];
+  for (const v of ['\t=1+1', '\r=2', ' =3', '＝x'.replace('＝', '@'), '+1', '-1']) {
+    const csv = N.toCSV([{ a: v }], cols).split('\r\n').slice(1).join('\r\n');
+    assert.ok(/^"?'/.test(csv), `沒防住：${JSON.stringify(v)} → ${JSON.stringify(csv)}`);
+  }
+});
+
+test('匯入備份：丟掉多餘／惡意欄位、轉成字串、重複編號重新編號', () => {
+  const bad = JSON.parse('{"needs":[{"id":"N-1","title":"a","__proto__":{"polluted":1},"extra":"x","description":{"a":1}},{"id":"N-1","title":"b"}],"providers":[{"id":"P-1","name":"p"},{"id":"P-1","name":"q"}]}');
+  const r = N.validateBackup(bad);
+  assert.strictEqual({}.polluted, undefined);
+  assert.ok(!('extra' in r.needs[0]));
+  assert.strictEqual(r.needs[0].description, '');
+  assert.notStrictEqual(r.needs[0].id, r.needs[1].id);
+  assert.notStrictEqual(r.providers[0].id, r.providers[1].id);
+  assert.throws(() => N.validateBackup(null));
+  assert.throws(() => N.validateBackup({ needs: [null], providers: [] }));
+});
+
+test('新增需求的建立日期用本機日期（不是 UTC）', () => {
+  const d = new Date(); const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const r = N.addNeed(fresh(), { title: 't', description: 'd', contact: 'c' }, C);
+  assert.strictEqual(r.need.created, local);
+});

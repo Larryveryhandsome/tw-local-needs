@@ -10,6 +10,7 @@
 <header class="topbar"><div class="brand"><span data-cfg="name" style="display:inline;font-size:inherit;letter-spacing:inherit;color:inherit;margin:0"></span><span data-cfg="englishName"></span></div>
 <nav><a href="#how">怎麼運作</a><a href="#needs">公開需求</a><a class="nav-cta" href="#submit">提出需求</a><a href="admin.html">營運後台</a></nav></header>
 <main>
+<div class="notice" style="margin:0;border-radius:0;text-align:center"><b>示範版：</b>送出的需求只存在你這個瀏覽器，不會傳給任何人，請勿填真實個資。</div>
 <section class="hero"><div class="hero-copy"><p class="eyebrow"><span data-cfg="region"></span>生活供需協作平台</p>
 <h1><span class="nb">有需要的人，</span><br><em class="nb">不用再到處問。</em></h1>
 <p class="lead">把散落在社群、電話與熟人網絡裡的生活需求，整理、確認，交給真正能服務的在地夥伴。</p>
@@ -33,7 +34,7 @@
 <div class="two"><label>地區<select name="area"></select></label><label>類別<select name="category" data-empty="（讓系統依說明自動分類）"></select></label></div>
 <label>需求說明<textarea name="description" required maxlength="1000" placeholder="請描述真正需要解決的事情、時間與重要條件"></textarea></label>
 <div class="two"><label>希望完成時間<input name="deadline" placeholder="例如：本週內"></label><label>聯絡方式<input name="contact" required placeholder="電話或 LINE ID，只供平台聯繫"></label></div>
-<label class="check"><input type="checkbox" required> 我同意平台為媒合目的保存並使用上述資料。</label>
+<label class="check"><input type="checkbox" name="consent" required> 我同意平台為媒合目的保存並使用上述資料。</label>
 <button class="button primary" type="submit">送出需求，請平台協助</button><p id="formMessage" class="form-message" role="status"></p></form></section>
 </main>
 <footer><span data-cfg="name"></span>｜示範版　｜　平台不是政府機關，媒合不等於背書，交易前請自行確認資格與條件。</footer>
