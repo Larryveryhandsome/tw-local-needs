@@ -96,3 +96,15 @@ test('備份格式檢查', () => {
   assert.throws(() => N.validateBackup({ needs: 'x' }));
   assert.throws(() => N.validateBackup({ needs: [{ id: 'N-1' }], providers: [] }));
 });
+
+test('去識別化：說明文字裡的電話、Email、身分證、LINE ID 不會出現在公開頁', () => {
+  const t = N.redactText('請找王先生 0912-345-678 或 02-2345-6789，信箱 a.b@example.com，LINE ID: wang123，證號 A123456789，約 25 份 2026-10-04 共 1000 元');
+  for (const leak of ['0912', '2345-6789', 'a.b@example.com', 'wang123', 'A123456789']) assert.ok(!t.includes(leak), leak);
+  assert.ok(t.includes('25 份'));
+  assert.ok(t.includes('1000 元'));
+  const d = fresh();
+  d.needs[1].description = '請打 0933123456 聯絡';
+  const pub = N.publicView(d, C).find(n => n.id === d.needs[1].id);
+  assert.ok(!pub.description.includes('0933123456'));
+  assert.ok(!('contact' in pub));
+});

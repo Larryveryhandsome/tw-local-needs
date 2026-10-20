@@ -82,11 +82,22 @@
     return d;
   }
 
-  /** 公開頁用：只留允許公開的狀態，並拿掉聯絡方式。 */
+  /** 去識別化：把文字裡的電話、Email、身分證字號、LINE ID 蓋掉（居民常把聯絡方式寫進說明欄）。 */
+  function redactText(s) {
+    return String(s == null ? '' : s)
+      .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[Email已隱藏]')
+      .replace(/\b[A-Z][12]\d{8}\b/gi, '[證號已隱藏]')
+      .replace(/(?:\+?886[-\s]?)?09\d{2}[-\s]?\d{3}[-\s]?\d{3}/g, '[電話已隱藏]')
+      .replace(/(?<![\d-])\(?0\d{1,2}\)?[-\s]?\d{3,4}[-\s]?\d{3,4}(?![\d-])/g, '[電話已隱藏]')
+      .replace(/(line\s*(?:id)?\s*[:：]?\s*)@?[A-Za-z0-9._-]{3,}/gi, '$1[已隱藏]');
+  }
+
+  /** 公開頁用：只留允許公開的狀態，拿掉聯絡方式，並蓋掉說明文字裡的個資。 */
   function publicView(data, config) {
     return data.needs
       .filter(n => config.publicStatuses.includes(n.status))
-      .map(({ contact, providerId, ...rest }) => rest);
+      .map(({ contact, providerId, ...rest }) => Object.assign(rest, {
+        title: redactText(rest.title), description: redactText(rest.description), deadline: redactText(rest.deadline) }));
   }
 
   /** 遮罩聯絡方式（後台列表用）：0900-000-101 → 0900-***-101。 */
@@ -163,6 +174,6 @@
     return { needs: obj.needs, providers: obj.providers };
   }
 
-  return { nextId, guessCategory, validateNeed, addNeed, addProvider, updateNeed, publicView, maskContact,
+  return { nextId, guessCategory, redactText, validateNeed, addNeed, addProvider, updateNeed, publicView, maskContact,
     similarity, findDuplicates, suggestProviders, stats, toCSV, validateBackup };
 });
