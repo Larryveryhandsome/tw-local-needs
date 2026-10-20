@@ -160,7 +160,7 @@
     const groups = new Map();
     needs.forEach(n => {
       if (['已完成', '已取消'].includes(n.status)) return;
-      const k = n.area + ' ' + n.category;
+      const k = n.area + '||' + n.category;
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push({ n, g: gramsOf(n.title) });
     });
