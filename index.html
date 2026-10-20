@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{name}｜讓在地的需要，被在地的人接住</title>
+<meta name="description" content="地方生活需求與在地服務者的媒合平台雛形：需求提交、去識別化公開、後台媒合與成果統計。">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar"><div class="brand"><span data-cfg="name" style="display:inline;font-size:inherit;letter-spacing:inherit;color:inherit;margin:0"></span><span data-cfg="englishName"></span></div>
+<nav><a href="#how">怎麼運作</a><a href="#needs">公開需求</a><a class="nav-cta" href="#submit">提出需求</a><a href="admin.html">營運後台</a></nav></header>
+<main>
+<section class="hero"><div class="hero-copy"><p class="eyebrow"><span data-cfg="region"></span>生活供需協作平台</p>
+<h1>有需要的人，<br><em>不用再到處問。</em></h1>
+<p class="lead">把散落在社群、電話與熟人網絡裡的生活需求，整理、確認，交給真正能服務的在地夥伴。</p>
+<div class="hero-actions"><a class="button primary" href="#submit">我有一個需求</a><a class="button ghost" href="#how">了解怎麼運作</a></div>
+<div class="proof"><span><b id="needCount">0</b> 筆需求</span><span><b id="providerCount">0</b> 個在地服務者</span><span><b id="resolvedCount">0</b> 件已完成</span></div></div>
+<div class="radar-card" aria-hidden="true"><div class="radar-ring r1"></div><div class="radar-ring r2"></div><div class="radar-ring r3"></div><div class="radar-dot d1"></div><div class="radar-dot d2"></div><div class="radar-dot d3"></div><div class="radar-center"><span data-cfg="region"></span><strong>需求雷達</strong></div></div></section>
+
+<section id="how" class="section"><div class="section-kicker">不是公告欄，是協作流程</div><h2>從「不知道問誰」<br>到「真的有人處理」</h2>
+<div class="steps"><article><b>01</b><h3>說出需要</h3><p>填寫地區、需求類型與必要條件：找房、搬運、修繕、餐食或日常協助都可以。</p></article>
+<article><b>02</b><h3>確認與整理</h3><p>平台確認內容、分類、標出可能重複的需求，確認後才公開去識別化摘要。</p></article>
+<article><b>03</b><h3>找到合適的人</h3><p>依服務區域與項目，媒合在地服務者，並記錄處理進度。</p></article>
+<article><b>04</b><h3>回報結果</h3><p>追蹤是否接洽、是否解決，累積成地方的服務資料。</p></article></div></section>
+
+<section id="needs" class="section tint"><div class="section-head"><div><div class="section-kicker">目前公開的需求摘要</div><h2><span data-cfg="region"></span>正在發生什麼需要？</h2></div><a class="text-link" href="#submit">提交一筆需求 →</a></div>
+<div id="publicNeeds" class="need-grid"></div></section>
+
+<section id="submit" class="section submit-section"><div><div class="section-kicker">把需求交給地方協作</div><h2>你現在需要什麼？</h2>
+<p class="muted">只公開去識別化摘要。電話與 LINE 不會出現在公開頁。<br>請不要填寫身分證字號、病歷等敏感資料。</p></div>
+<form id="needForm" class="form-card" novalidate>
+<label>需求標題<input name="title" required maxlength="60" placeholder="例如：東區需要小型搬家協助"></label>
+<div class="two"><label>地區<select name="area"></select></label><label>類別<select name="category" data-empty="（讓系統依說明自動分類）"></select></label></div>
+<label>需求說明<textarea name="description" required maxlength="1000" placeholder="請描述真正需要解決的事情、時間與重要條件"></textarea></label>
+<div class="two"><label>希望完成時間<input name="deadline" placeholder="例如：本週內"></label><label>聯絡方式<input name="contact" required placeholder="電話或 LINE ID，只供平台聯繫"></label></div>
+<label class="check"><input type="checkbox" required> 我同意平台為媒合目的保存並使用上述資料。</label>
+<button class="button primary" type="submit">送出需求，請平台協助</button><p id="formMessage" class="form-message" role="status"></p></form></section>
+</main>
+<footer><span data-cfg="name"></span>｜示範版　｜　平台不是政府機關，媒合不等於背書，交易前請自行確認資格與條件。</footer>
+<script src="config.js"></script><script src="js/needs.js"></script><script src="js/app.js"></script>
+</body></html>
