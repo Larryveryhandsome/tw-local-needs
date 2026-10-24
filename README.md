@@ -8,7 +8,9 @@
 - 沒選類別時**依說明文字自動分類**；成果統計；**匯出 CSV**（Excel 不亂碼、防公式注入）；JSON 備份與還原。
 - 免安裝、免伺服器：純網頁，雙擊就能用，也可以放 GitHub Pages。
 
-**線上示範（虛構資料）：** https://larryveryhandsome.github.io/tw-local-needs/
+**線上示範（虛構資料，純展示）：** https://larryveryhandsome.github.io/tw-local-needs/
+
+> 線上版（github.io 網域）**只能瀏覽**：表單與後台的修改動作都停用，不會收下或保存任何資料。要真的收資料請**自行架設**（下載專案，用自己的網域或本機開啟；`config.js` 的 `displayOnly` 設 `false` 可強制啟用）。
 
 > ⚠️ **這是單機示範版**：資料存在瀏覽器的 localStorage，**只有那台電腦的那個瀏覽器看得到，後台也沒有登入保護**。
 > 適合做提案展示、社區試辦、驗證需求；正式收真實民眾資料前，請接上資料庫與帳號權限（見下方「要正式上線的話」）。

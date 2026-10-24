@@ -158,3 +158,19 @@ test('新增需求的建立日期用本機日期（不是 UTC）', () => {
   const r = N.addNeed(fresh(), { title: 't', description: 'd', contact: 'c' }, C);
   assert.strictEqual(r.need.created, local);
 });
+
+test('純展示模式：github.io 預設只展示，自行架設可收資料', () => {
+  assert.strictEqual(N.isDisplayOnly({ displayOnly: 'auto' }, 'larryveryhandsome.github.io'), true);
+  assert.strictEqual(N.isDisplayOnly(C, 'someone.github.io'), true);
+  assert.strictEqual(N.isDisplayOnly(C, 'localhost'), false);
+  assert.strictEqual(N.isDisplayOnly(C, ''), false);
+  assert.strictEqual(N.isDisplayOnly({ displayOnly: true }, 'localhost'), true);
+  assert.strictEqual(N.isDisplayOnly({ displayOnly: false }, 'x.github.io'), false);
+  assert.strictEqual(N.isDisplayOnly({ displayOnly: 'auto' }, 'evilgithub.io'), false);
+});
+
+test('純展示模式：app.js 在展示模式下停用表單並擋掉寫入', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+  assert.ok(src.includes('DISPLAY_ONLY') && src.includes('自行架設'));
+  assert.ok(/if \(DISPLAY_ONLY\) \{ alert\(DISPLAY_MSG\); return false; \}/.test(src));
+});

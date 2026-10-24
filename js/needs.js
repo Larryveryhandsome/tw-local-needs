@@ -230,6 +230,14 @@
     return { needs, providers };
   }
 
-  return { nextId, guessCategory, redactText, validateNeed, addNeed, addProvider, updateNeed, publicView, maskContact,
+  // GitHub Pages 等公開展示站：只展示、不收資料。cfg.displayOnly: 'auto'（預設，github.io 網域自動啟用）／true／false
+  function isDisplayOnly(cfg, hostname) {
+    const v = cfg && cfg.displayOnly;
+    if (v === true || v === 'true') return true;
+    if (v === false || v === 'false') return false;
+    return /(^|\.)github\.io$/i.test(String(hostname || ''));
+  }
+
+  return { isDisplayOnly, nextId, guessCategory, redactText, validateNeed, addNeed, addProvider, updateNeed, publicView, maskContact,
     similarity, findDuplicates, suggestProviders, stats, toCSV, validateBackup };
 });

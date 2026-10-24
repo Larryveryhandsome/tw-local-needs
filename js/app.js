@@ -26,10 +26,13 @@
       return false;
     }
   }
+  const DISPLAY_ONLY = N.isDisplayOnly(C, location.hostname);
+  const DISPLAY_MSG = '這是純展示頁：此網站不收資料、也不保存任何輸入。要真的收需求，請下載專案自行架設（見 README）。';
   let data = load();
   // 每次變更前先重新讀取最新資料（另一個分頁可能剛收到新需求），避免用舊資料整份覆蓋而弄丟別人剛送的需求。
   // fn 收到最新資料並回傳新資料；儲存失敗就維持原狀並回傳 false。
   function commit(fn) {
+    if (DISPLAY_ONLY) { alert(DISPLAY_MSG); return false; }
     const latest = load();
     let next;
     try { next = fn(latest); } catch (err) { alert(err.message); return false; }
@@ -79,7 +82,13 @@
   }
 
   const form = $('#needForm');
-  if (form) {
+  if (form && DISPLAY_ONLY) {
+    form.querySelectorAll('input,select,textarea,button').forEach(el => { el.disabled = true; });
+    const b = form.querySelector('button[type=submit]'); if (b) b.textContent = '純展示頁，無法送出';
+    const m = $('#formMessage'); if (m) m.textContent = DISPLAY_MSG;
+    form.insertAdjacentHTML('afterbegin', '<div class="notice" id="displayOnlyNotice"><b>純展示：</b>這個線上版只供瀏覽，<b>不會收下或保存</b>你填的任何內容。要儲存資料，請自行架設（下載專案，見 README「自行架設」）。</div>');
+  }
+  if (form && !DISPLAY_ONLY) {
     form.addEventListener('submit', e => {
       e.preventDefault();
       const x = Object.fromEntries(new FormData(form));
@@ -96,6 +105,9 @@
     });
   }
 
+  if (DISPLAY_ONLY && document.body.classList.contains('admin-body')) {
+    document.querySelector('.admin-main').insertAdjacentHTML('afterbegin', '<div class="notice" id="displayOnlyNotice"><b>純展示：</b>線上版後台僅供瀏覽，所有修改動作都被停用。要實際使用，請自行架設。</div>');
+  }
   // ── 後台 ──────────────────────────────────────────────
   function renderAdmin() {
     const m = $('#metrics');

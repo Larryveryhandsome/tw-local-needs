@@ -21,6 +21,8 @@ window.NEEDS_CONFIG = {
   // 公開頁只顯示這些狀態的需求（待確認的先不公開，避免廣告或亂填）
   publicStatuses: ['已確認', '媒合中', '已完成'],
   // 瀏覽器儲存用的鍵（同一個網址放兩個平台時要改成不同名稱）
+  // 純展示模式：'auto'＝在 github.io 網域自動只展示、不收資料；true＝一律展示；false＝一律可用（自行架設請用 false 或 auto）
+  displayOnly: 'auto',
   storageKey: 'tw-local-needs-v1'
 };
 
