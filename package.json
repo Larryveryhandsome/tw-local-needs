@@ -1,0 +1,10 @@
+{
+  "name": "tw-local-needs",
+  "version": "1.0.0",
+  "description": "地方生活需求與在地服務者的媒合平台雛形",
+  "license": "Apache-2.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\""
+  }
+}
